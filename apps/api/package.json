@@ -8,7 +8,10 @@
         "test": "bun test"
     },
     "dependencies": {
-        "elysia": "latest"
+        "@elysiajs/cors": "^1.4.1",
+        "elysia": "latest",
+        "openai": "^6.15.0",
+        "zod": "^4.3.5"
     },
     "devDependencies": {
         "bun-types": "latest"
