@@ -1,0 +1,7 @@
+{
+  "name": "signal-root",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ]
+}
