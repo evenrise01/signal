@@ -10,22 +10,16 @@ import {
 import { z } from "zod";
 import { enforceSafety } from "../guards/safety";
 
-// Intermediate Schemas for pipeline steps
-const ExtractionSchema = z.object({
+// Combined Schema for Core Analysis (Signal + Emotion + Risks)
+const CoreAnalysisSchema = z.object({
     subtext_summary: z.object({
         explicit: z.string(),
         implied: z.string(),
         avoided: z.string()
-    })
-});
-
-const EmotionSchema = z.object({
+    }),
     intent_score: z.number().min(0).max(100),
     confidence: z.number().min(0).max(100),
-    emotional_tones: z.array(z.string())
-});
-
-const RisksSchema = z.object({
+    emotional_tones: z.array(z.string()),
     risk_flags: z.array(z.object({
         type: z.string(),
         level: z.enum(["red", "yellow", "green"]),
@@ -46,50 +40,34 @@ const StrategiesSchema = z.object({
 export class TextAnalysisPipeline {
     static async run(text: string, context?: string): Promise<AnalysisResult> {
         
-        // Step 1: Signal Extraction
-        const signals = await AIService.generateStructured(
-            "You are an expert communication analyst. Extract explicit meaning, implied meaning, and what is being avoided in the text.",
+        // Step 1: Core Analysis (Combined Signal, Emotion, Risks)
+        // Optimization: Merged 3 calls into 1 to reduce latency and quota usage (Gemini 429 errors).
+        const coreAnalysis = await AIService.generateStructured(
+            `You are an expert communication analyst. Perfrom a comprehensive analysis:
+            1. Extract explicit, implied, and avoided meanings.
+            2. Analyze emotional tone and intent score (0-100).
+            3. Identify risk flags with probabilities.`,
             `Input: "${text}". Context: ${context || "None"}.`,
-            ExtractionSchema,
-            "signal_extraction"
+            CoreAnalysisSchema,
+            "core_analysis"
         );
 
-        // Step 2: Emotion & Intent
-        const emotion = await AIService.generateStructured(
-            "Analyze the emotional tone and intent of the message. Intent score: 0 (disinterested) to 100 (highly interested).",
-            `Input: "${text}". Signals: ${JSON.stringify(signals)}.`,
-            EmotionSchema,
-            "emotion_analysis"
-        );
-
-        // Step 3: Patterns (Mocked for MVP initially, or basic text analysis)
-        // Ideally this checks DB, but for now we look for patterns within the text itself or mark as 'insufficient data'
-        const patterns = []; // Empty for single-shot MVP without history
-
-        // Step 4: Risk Scoring
-        const risks = await AIService.generateStructured(
-            "Identify risk flags (Red: dangerous/toxic, Yellow: caution, Green: healthy). Assign probabilities.",
-            `Input: "${text}". Emotion: ${JSON.stringify(emotion)}.`,
-            RisksSchema,
-            "risk_scoring"
-        );
-
-        // Step 5: Strategies
+        // Step 2: Strategies (Requires the analysis context)
         const strategies = await AIService.generateStructured(
             "Generate 3 distinct response strategies based on the analysis. DO NOT tell the user what to do, offer options.",
-            `Input: "${text}". Risks: ${JSON.stringify(risks)}. Emotion: ${JSON.stringify(emotion)}.`,
+            `Input: "${text}". \nAnalysis Summary: ${JSON.stringify(coreAnalysis)}.`,
             StrategiesSchema,
             "strategy_synthesis"
         );
 
         // Assemble Result
         const rawResult: AnalysisResult = {
-            intent_score: emotion.intent_score,
-            confidence: emotion.confidence,
-            emotional_tones: emotion.emotional_tones,
-            subtext_summary: signals.subtext_summary,
-            patterns: [], // TODO: real patterns
-            risk_flags: risks.risk_flags,
+            intent_score: coreAnalysis.intent_score,
+            confidence: coreAnalysis.confidence,
+            emotional_tones: coreAnalysis.emotional_tones,
+            subtext_summary: coreAnalysis.subtext_summary,
+            patterns: [], // Mocked
+            risk_flags: coreAnalysis.risk_flags,
             strategies: strategies.strategies
         };
 

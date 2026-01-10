@@ -75,7 +75,7 @@ Do not "helpfully" add features.
 
 ### AI Models
 
-* Primary: OpenAI GPT-4.x
+* Primary: Google Gemini 1.5
 * Secondary (fallback): Claude 3.5 Sonnet
 
 ### OCR
