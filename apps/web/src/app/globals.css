@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  /* Midnight Glass Theme Variables */
+  --background: #0a0a0f;
+  --foreground: #ffffff;
+  
+  --glass-surface: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-glow: rgba(255, 255, 255, 0.05);
+
+  /* Semantic Colors */
+  --risk-high: #ef4444;    /* red-500 */
+  --risk-medium: #eab308;  /* yellow-500 */
+  --risk-low: #10b981;     /* emerald-500 */
+  --confidence-high: #3b82f6; /* blue-500 */
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* Base Glass Utility */
+  .glass {
+    @apply backdrop-blur-xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)];
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* component classes repeating styles to avoid '@apply glass' error */
+  .glass-card {
+    @apply backdrop-blur-xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)];
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    @apply rounded-2xl p-6 transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply border-white/10 bg-[color:var(--glass-glow)];
+  }
+  
+  .glass-input {
+    @apply backdrop-blur-xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)];
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    @apply rounded-xl px-4 py-3 outline-none transition-all duration-300;
+    @apply focus:border-white/20 focus:bg-[color:var(--glass-glow)];
+    @apply placeholder:text-white/20;
+  }
+}
