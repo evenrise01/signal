@@ -37,3 +37,9 @@ export interface AnalyzeTextInput {
   text: string;
   context?: string;
 }
+
+export interface AnalyzeScreenshotInput {
+  image: string; // Base64
+  context?: string;
+}
+

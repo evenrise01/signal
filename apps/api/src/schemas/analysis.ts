@@ -5,6 +5,12 @@ export const AnalyzeTextSchema = z.object({
   context: z.string().optional(),
 });
 
+export const AnalyzeScreenshotSchema = z.object({
+  image: z.string().min(1, "Image is required"), // Base64 string
+  context: z.string().optional(),
+});
+
+
 export const RiskLevelSchema = z.enum(["red", "yellow", "green"]);
 export const TrendSchema = z.enum(["increasing", "stable", "decreasing"]);
 

@@ -38,11 +38,11 @@ const StrategiesSchema = z.object({
 });
 
 export class TextAnalysisPipeline {
-    static async run(text: string, context?: string): Promise<AnalysisResult> {
+    static async run(text?: string, context?: string, image?: string): Promise<AnalysisResult> {
         
         // Step 1: Core Analysis (Combined Signal, Emotion, Risks)
-        const coreAnalysis = await AIService.generateStructured(
-            `You are an expert communication analyst. Perform a comprehensive analysis and return a JSON object with this EXACT structure:
+        // If image is provided, we tell the AI to prioritize the visual content
+        const systemPrompt = `You are an expert communication analyst. Perform a comprehensive analysis and return a JSON object with this EXACT structure:
 
 {
   "subtext_summary": {
@@ -63,19 +63,35 @@ export class TextAnalysisPipeline {
   ]
 }
 
-DO NOT wrap the response in any outer object. Return the JSON directly with these exact field names.`,
-            `Analyze this message:
-Input: "${text}"
-Context: ${context || "None"}
+DO NOT wrap the response in any outer object. Return the JSON directly with these exact field names.`;
 
-Provide:
-1. Subtext summary (explicit, implied, avoided meanings)
-2. Intent score (0-100, how clear is the sender's intent)
-3. Confidence level (0-100, how confident you are in this analysis)
-4. Emotional tones (list of detected emotions)
-5. Risk flags (potential relationship/communication risks)`,
+        const userPrompt = image 
+            ? `Analyze this screenshot of a conversation. ${text ? `Additional text context: ${text}` : ""}
+               Context: ${context || "None"}
+               
+               Provide:
+               1. Subtext summary (explicit, implied, avoided meanings)
+               2. Intent score (0-100, how clear is the sender's intent)
+               3. Confidence level (0-100, how confident you are in this analysis)
+               4. Emotional tones (list of detected emotions)
+               5. Risk flags (potential relationship/communication risks)`
+            : `Analyze this message:
+               Input: "${text}"
+               Context: ${context || "None"}
+               
+               Provide:
+               1. Subtext summary (explicit, implied, avoided meanings)
+               2. Intent score (0-100, how clear is the sender's intent)
+               3. Confidence level (0-100, how confident you are in this analysis)
+               4. Emotional tones (list of detected emotions)
+               5. Risk flags (potential relationship/communication risks)`;
+
+        const coreAnalysis = await AIService.generateStructured(
+            systemPrompt,
+            userPrompt,
             CoreAnalysisSchema,
-            "CoreAnalysis"
+            "CoreAnalysis",
+            image
         );
 
         // Step 2: Strategies (Requires the analysis context)
@@ -98,7 +114,7 @@ Return a JSON object with this EXACT structure:
 DO NOT wrap in any outer object. Return exactly 3 distinct strategies. DO NOT tell the user what to do - offer options they can choose from.`,
             `Based on this analysis, generate 3 response strategies:
 
-Original Input: "${text}"
+Original Input: "${text || "Screenshot provided"}"
 Analysis Summary: ${JSON.stringify(coreAnalysis)}
 
 Each strategy should:

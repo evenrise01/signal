@@ -1,11 +1,11 @@
 import { Elysia, t } from "elysia";
-import { AnalyzeTextSchema } from "../schemas/analysis";
+import { AnalyzeTextSchema, AnalyzeScreenshotSchema } from "../schemas/analysis";
 import { TextAnalysisPipeline } from "../pipelines/text-analysis";
 
 export const analyzeRoutes = new Elysia({ prefix: "/analyze" })
   .post("/text", async ({ body, set }) => {
     try {
-      console.log("📥 Received analysis request:", { 
+      console.log("📥 Received text analysis request:", { 
         text: body.text?.substring(0, 100), 
         context: body.context 
       });
@@ -15,23 +15,37 @@ export const analyzeRoutes = new Elysia({ prefix: "/analyze" })
       console.log("✅ Analysis completed successfully");
       return result;
       
-    } catch (e) {
-      // Detailed error logging
-      console.error("❌ Analysis Pipeline Error:");
-      console.error("Error type:", e?.constructor?.name);
-      console.error("Error message:", e?.message);
-      console.error("Full error:", e);
-      console.error("Stack trace:", e?.stack);
-      
+    } catch (e: any) {
+      console.error("❌ Analysis Pipeline Error:", e?.message);
       set.status = 500;
-      
-      // Return more specific error message during development
       return { 
         error: e instanceof Error ? e.message : "Analysis failed",
-        // Remove in production:
         details: process.env.NODE_ENV === 'development' ? e?.stack : undefined
       };
     }
   }, {
     body: AnalyzeTextSchema
+  })
+  .post("/screenshot", async ({ body, set }) => {
+    try {
+      console.log("📥 Received screenshot analysis request", {
+        context: body.context
+      });
+      
+      // image is expected as base64 string
+      const result = await TextAnalysisPipeline.run(undefined, body.context, body.image);
+      
+      console.log("✅ Screenshot analysis completed");
+      return result;
+      
+    } catch (e: any) {
+      console.error("❌ Screenshot Pipeline Error:", e?.message);
+      set.status = 500;
+      return { 
+        error: e instanceof Error ? e.message : "Analysis failed",
+        details: process.env.NODE_ENV === 'development' ? e?.stack : undefined
+      };
+    }
+  }, {
+    body: AnalyzeScreenshotSchema
   });
