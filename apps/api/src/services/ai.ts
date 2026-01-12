@@ -13,11 +13,12 @@ export class AIService {
     systemPrompt: string,
     userPrompt: string,
     schema: z.ZodType<T>,
-    schemaName: string
+    schemaName: string,
+    imageBase64?: string
   ): Promise<T> {
       try {
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-flash-lite", 
+          model: "gemini-2.5-flash", // Using latest 1.5 flash for better vision support
           systemInstruction: systemPrompt,
           generationConfig: {
               responseMimeType: "application/json",
@@ -29,7 +30,19 @@ export class AIService {
         
         console.log("📤 Sending prompt:", fullPrompt.substring(0, 200));
         
-        const result = await model.generateContent(fullPrompt);
+        let promptParts: any[] = [fullPrompt];
+        
+        if (imageBase64) {
+          promptParts.push({
+            inlineData: {
+              data: imageBase64,
+              mimeType: "image/jpeg" // Defaulting to jpeg, but should ideally be dynamic
+            }
+          });
+          console.log("🖼️ Including image in request");
+        }
+
+        const result = await model.generateContent(promptParts);
         const text = result.response.text();
         
         console.log("📥 Raw AI response:");

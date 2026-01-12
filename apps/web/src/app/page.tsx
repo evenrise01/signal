@@ -4,18 +4,23 @@ import { useState } from "react";
 import { InputForm } from "@/components/analysis/input-form";
 import { Dashboard } from "@/components/analysis/dashboard";
 import { ApiClient } from "@/lib/api";
-import type { AnalysisResult, AnalyzeTextInput } from "@/types";
+import type { AnalysisResult, AnalyzeTextInput, AnalyzeScreenshotInput } from "@/types";
 
 export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = async (input: AnalyzeTextInput) => {
+  const handleAnalyze = async (input: AnalyzeTextInput | AnalyzeScreenshotInput) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await ApiClient.analyzeText(input);
+      let data;
+      if ('image' in input) {
+        data = await ApiClient.analyzeScreenshot(input);
+      } else {
+        data = await ApiClient.analyzeText(input);
+      }
       setResult(data);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
@@ -23,6 +28,7 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
 
   const handleReset = () => {
     setResult(null);

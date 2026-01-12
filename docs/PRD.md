@@ -248,10 +248,22 @@ Multi-model support:
 
 ---
 
-### 8.4 OCR
+### 8.4 Vision & OCR
 
-* Primary: AWS Textract
-* Fallback: Tesseract
+* **Primary**: Gemini Pro Vision (Multimodal Analysis)
+* **Fallback**: Tesseract (Traditional OCR if needed)
+
+**Decision Logic (MVP Update)**:
+We are using Gemini Vision directly for screenshot analysis instead of a separate OCR step (like AWS Textract). 
+
+**Tradeoffs**:
+*   **Pros**: 
+    *   **Contextual Awareness**: Understands the visual layout, bubbles, and UI elements (who said what) better than raw text extraction.
+    *   **Unified Pipeline**: No need for separate AWS infrastructure or messy text cleaning.
+    *   **Speed**: One less step in the pipeline.
+*   **Cons**:
+    *   **Token Consumption**: Higher token cost for images compared to short text.
+    *   **Strict Redaction**: Manual redaction is harder without coordinate-based OCR, though Gemini can be prompted to ignore names.
 
 ---
 
