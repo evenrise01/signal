@@ -13,20 +13,55 @@ export function InputForm({ onAnalyze, isLoading }: InputFormProps) {
   const [context, setContext] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setImagePreview(base64String);
+      // Extract the base64 part only
+      setImage(base64String.split(",")[1]);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        // Extract the base64 part only
-        setImage(base64String.split(",")[1]);
-      };
-      reader.readAsDataURL(file);
+    if (file) processFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) processFile(file);
+        break;
+      }
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isLoading) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (isLoading) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   const removeImage = () => {
@@ -48,7 +83,12 @@ export function InputForm({ onAnalyze, isLoading }: InputFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto space-y-6">
-      <div className="space-y-4">
+      <div 
+        className={`space-y-4 transition-all duration-300 rounded-2xl ${isDragging ? "p-4 bg-cyan-500/10 ring-2 ring-cyan-500/50" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div className="flex justify-between items-center">
           <label className="text-sm font-medium text-gray-400 uppercase tracking-wider">
             Communication Input
@@ -87,14 +127,27 @@ export function InputForm({ onAnalyze, isLoading }: InputFormProps) {
             </button>
           </div>
         ) : (
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste the text or conversation here..."
-            className="glass-input w-full h-48 resize-none text-lg leading-relaxed"
-            maxLength={5000}
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onPaste={handlePaste}
+              placeholder="Paste text or an image here..."
+              className={`glass-input w-full h-48 resize-none text-lg leading-relaxed transition-all duration-300 ${isDragging ? "border-cyan-500/50" : ""}`}
+              maxLength={5000}
+              disabled={isLoading}
+            />
+            {isDragging && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/40 rounded-xl backdrop-blur-[2px]">
+                    <div className="flex flex-col items-center gap-2 text-cyan-400">
+                        <svg className="w-12 h-12 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span className="font-bold tracking-widest uppercase text-sm">Drop Screenshot</span>
+                    </div>
+                </div>
+            )}
+          </div>
         )}
         
         {!imagePreview && (
